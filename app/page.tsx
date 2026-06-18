@@ -1,65 +1,143 @@
-import Image from "next/image";
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
+
+type Wine = {
+  id: string
+  name: string
+  producer: string
+  region: string
+  vintage: number
+  variety: string
+  wine_type: string
+  is_magnum: boolean
+  stock: number
+  tasting_note: string
+  memo: string
+  is_important_memo: boolean
+  is_so2_free: boolean
+  purchase_price: number
+  photo_url: string
+}
 
 export default function Home() {
+  const router = useRouter()
+  const [wines, setWines] = useState<Wine[]>([])
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchWines()
+  }, [])
+
+  async function fetchWines() {
+    const { data, error } = await supabase.from('wines').select('*').order('name')
+    if (error) console.error(error)
+    else setWines(data || [])
+    setLoading(false)
+  }
+
+  async function updateStock(id: string, delta: number, current: number) {
+    const newStock = Math.max(0, current + delta)
+    const { error } = await supabase.from('wines').update({ stock: newStock }).eq('id', id)
+    if (!error) setWines(wines.map(w => w.id === id ? { ...w, stock: newStock } : w))
+  }
+
+  const filtered = wines.filter(w =>
+    w.name?.toLowerCase().includes(search.toLowerCase()) ||
+    w.variety?.toLowerCase().includes(search.toLowerCase()) ||
+    w.region?.toLowerCase().includes(search.toLowerCase()) ||
+    w.producer?.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const totalValue = wines.reduce((sum, w) => sum + (w.purchase_price || 0) * w.stock, 0)
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-4xl mx-auto">
+
+        <div className="mb-4">
+          <h1 className="text-2xl font-medium text-gray-900">ワイン在庫</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            棚卸金額：<span className="font-medium text-gray-900">¥{totalValue.toLocaleString()}</span>
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <input
+          type="text"
+          placeholder="品種・産地・生産者で検索…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full mb-4 px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:border-gray-400"
+        />
+
+        {loading && <p className="text-gray-400 text-sm">読み込み中…</p>}
+
+        {!loading && filtered.length === 0 && (
+          <p className="text-gray-400 text-sm">ワインが登録されていません。</p>
+        )}
+
+        <div className="flex flex-col gap-3">
+          {filtered.map(wine => {
+            const bottlePrice = wine.purchase_price ? wine.purchase_price * 2 + 1000 : null
+            const glassPrice = bottlePrice ? Math.round(bottlePrice / 6) : null
+
+            return (
+              <div
+                key={wine.id}
+                className={`bg-white rounded-2xl border overflow-hidden flex h-24 ${wine.stock <= 2 ? 'border-red-200' : 'border-gray-100'}`}
+              >
+                <div className="w-20 flex-shrink-0 bg-gray-100 flex items-center justify-center text-3xl">
+                  {wine.photo_url ? (
+                    <img src={wine.photo_url} alt={wine.name} className="w-full h-full object-cover" />
+                  ) : (
+                    wine.wine_type === '泡' ? '🥂' : wine.wine_type === '白' ? '🍾' : '🍷'
+                  )}
+                </div>
+
+                <div className="flex-1 px-3 py-2 flex flex-col justify-center min-w-0">
+                  <div className="flex items-center gap-1">
+                    <p className="text-sm font-medium text-gray-900 truncate">{wine.name}</p>
+                    {wine.is_important_memo && (
+                      <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full flex-shrink-0">重要</span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-700 truncate">{wine.variety}</p>
+                  <p className="text-xs text-gray-400 truncate">{wine.region}　{wine.producer}</p>
+                  {bottlePrice && (
+                    <p className="text-xs text-gray-400">ボトル ¥{bottlePrice.toLocaleString()} / グラス ¥{glassPrice?.toLocaleString()}</p>
+                  )}
+                </div>
+
+                <div className="px-3 flex flex-col items-end justify-center gap-1 flex-shrink-0">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => updateStock(wine.id, -1, wine.stock)}
+                      className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-lg text-gray-600 hover:bg-gray-50"
+                    >−</button>
+                    <span className={`text-lg font-medium w-6 text-center ${wine.stock <= 2 ? 'text-red-500' : 'text-gray-900'}`}>
+                      {wine.stock}
+                    </span>
+                    <button
+                      onClick={() => updateStock(wine.id, 1, wine.stock)}
+                      className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-lg text-gray-600 hover:bg-gray-50"
+                    >+</button>
+                  </div>
+                  {wine.stock <= 2 && (
+                    <span className="text-xs text-red-400">残少</span>
+                  )}
+                </div>
+              </div>
+            )
+          })}
         </div>
-      </main>
+
+        <button onClick={() => router.push('/wines/new')} className="mt-6 w-full py-3 bg-gray-900 text-white rounded-xl text-sm font-medium">
+          + 新しいワインを登録
+        </button>
+      </div>
     </div>
-  );
+  )
 }
