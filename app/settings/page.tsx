@@ -40,7 +40,7 @@ export default function Settings() {
     if (saved) setSettings(JSON.parse(saved))
   }, [])
 
-  function set(key: string, value: string | number) {
+  function set(key: string, value: string | number | boolean) {
     setSettings(s => ({ ...s, [key]: value }))
   }
 
