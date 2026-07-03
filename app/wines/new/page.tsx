@@ -16,8 +16,10 @@ export default function NewWine() {
     region: '',
     vintage: '',
     variety: '',
+    country: '',
     wine_type: '赤',
     is_magnum: false,
+    bottle_ml: 750,
     stock: 1,
     tasting_note: '',
     memo: '',
@@ -137,6 +139,12 @@ export default function NewWine() {
           </div>
 
           <div>
+            <label className="text-xs text-gray-400">国</label>
+            <input value={form.country} onChange={e => set('country', e.target.value)}
+              className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-gray-400" />
+          </div>
+
+          <div>
             <label className="text-xs text-gray-400">種類</label>
             <div className="flex gap-2 mt-1">
               {['赤', '白', '泡', 'ロゼ'].map(type => (
@@ -148,12 +156,24 @@ export default function NewWine() {
             </div>
           </div>
 
-          <div className="flex gap-6">
-            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-              <input type="checkbox" checked={form.is_magnum} onChange={e => set('is_magnum', e.target.checked)}
-                className="w-4 h-4 rounded" />
-              マグナム（1500ml）
-            </label>
+          <div>
+            <label className="text-xs text-gray-400">ボトルサイズ</label>
+            <div className="flex gap-2 mt-1 flex-wrap">
+              {[
+                { ml: 375, label: 'ハーフ（375ml）' },
+                { ml: 750, label: 'スタンダード（750ml）' },
+                { ml: 1000, label: '1000ml' },
+                { ml: 1500, label: 'マグナム（1500ml）' },
+              ].map(opt => (
+                <button key={opt.ml} onClick={() => { set('bottle_ml', opt.ml); set('is_magnum', opt.ml === 1500) }}
+                  className={`px-3 py-1.5 rounded-full text-sm border ${form.bottle_ml === opt.ml ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600'}`}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
             <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
               <input type="checkbox" checked={form.is_so2_free} onChange={e => set('is_so2_free', e.target.checked)}
                 className="w-4 h-4 rounded" />
