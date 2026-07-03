@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { GRAPE_VARIETIES, WINE_REGIONS, WINE_COUNTRIES, REGIONS_BY_COUNTRY } from '@/lib/wineData'
+import { GRAPE_VARIETIES, WINE_REGIONS, WINE_COUNTRIES, REGIONS_BY_COUNTRY, COUNTRY_BY_REGION } from '@/lib/wineData'
 
 const STATIC_DATA: Record<string, string[]> = {
   variety: GRAPE_VARIETIES,
@@ -16,9 +16,10 @@ type Props = {
   onChange: (value: string) => void
   placeholder?: string
   country?: string  // regionフィールド用：国で絞り込み
+  onCountryDetected?: (country: string) => void  // 産地選択時に国を自動入力
 }
 
-export default function AutocompleteInput({ field, value, onChange, placeholder, country }: Props) {
+export default function AutocompleteInput({ field, value, onChange, placeholder, country, onCountryDetected }: Props) {
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [dbValues, setDbValues] = useState<string[]>([])
   const [open, setOpen] = useState(false)
@@ -82,8 +83,20 @@ export default function AutocompleteInput({ field, value, onChange, placeholder,
           {suggestions.map(s => (
             <li
               key={s}
-              onMouseDown={() => { onChange(s); setOpen(false) }}
-              onTouchEnd={() => { onChange(s); setOpen(false) }}
+              onMouseDown={() => {
+                onChange(s)
+                if (field === 'region' && onCountryDetected && COUNTRY_BY_REGION[s]) {
+                  onCountryDetected(COUNTRY_BY_REGION[s])
+                }
+                setOpen(false)
+              }}
+              onTouchEnd={() => {
+                onChange(s)
+                if (field === 'region' && onCountryDetected && COUNTRY_BY_REGION[s]) {
+                  onCountryDetected(COUNTRY_BY_REGION[s])
+                }
+                setOpen(false)
+              }}
               className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0"
             >
               {s}

@@ -160,7 +160,7 @@ export default function EditWine() {
           <div className="flex gap-3">
             <div className="flex-1">
               <label className="text-xs text-gray-400">地方・産地</label>
-              <AutocompleteInput field="region" value={form.region} onChange={v => set('region', v)} country={form.country} />
+              <AutocompleteInput field="region" value={form.region} onChange={v => set('region', v)} country={form.country} onCountryDetected={v => set('country', v)} />
             </div>
             <div className="w-24">
               <label className="text-xs text-gray-400">ヴィンテージ</label>

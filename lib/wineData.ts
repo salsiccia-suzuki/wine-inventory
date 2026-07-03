@@ -369,6 +369,11 @@ export const REGIONS_BY_COUNTRY: Record<string, string[]> = {
   'ジョージア': ['カヘティ', 'カルトリ', 'イメレティ'],
 }
 
+// 産地→国の逆引きマップ（自動生成）
+export const COUNTRY_BY_REGION: Record<string, string> = Object.entries(REGIONS_BY_COUNTRY)
+  .flatMap(([country, regions]) => regions.map(r => [r, country]))
+  .reduce((acc, [r, c]) => ({ ...acc, [r]: c }), {})
+
 export const WINE_COUNTRIES = [
   'フランス',
   'イタリア',
