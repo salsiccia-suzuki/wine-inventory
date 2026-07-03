@@ -32,6 +32,17 @@ export default function Home() {
   const [showAll, setShowAll] = useState(false)
   const [priceMin, setPriceMin] = useState('')
   const [priceMax, setPriceMax] = useState('')
+  const [listFields, setListFields] = useState({
+    variety: true, country: true, region: true, producer: true, price: true,
+  })
+
+  useEffect(() => {
+    const saved = localStorage.getItem('wineSettings')
+    if (saved) {
+      const s = JSON.parse(saved)
+      if (s.listFields) setListFields(s.listFields)
+    }
+  }, [])
 
   useEffect(() => {
     fetchWines()
@@ -184,9 +195,15 @@ export default function Home() {
                       <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full flex-shrink-0">重要</span>
                     )}
                   </div>
-                  <p className={`text-sm truncate ${wine.is_archived ? 'text-gray-300' : 'text-gray-700'}`}>{wine.variety}</p>
-                  <p className={`text-xs truncate ${wine.is_archived ? 'text-gray-500' : 'text-gray-400'}`}>{wine.region}　{wine.producer}</p>
-                  {bottlePrice && (
+                  {listFields.variety && <p className={`text-sm truncate ${wine.is_archived ? 'text-gray-300' : 'text-gray-700'}`}>{wine.variety}</p>}
+                  <p className={`text-xs truncate ${wine.is_archived ? 'text-gray-500' : 'text-gray-400'}`}>
+                    {[
+                      listFields.country && wine.country,
+                      listFields.region && wine.region,
+                      listFields.producer && wine.producer,
+                    ].filter(Boolean).join('　')}
+                  </p>
+                  {listFields.price && bottlePrice && (
                     <p className={`text-xs ${wine.is_archived ? 'text-gray-500' : 'text-gray-400'}`}>ボトル ¥{bottlePrice.toLocaleString()} / グラス ¥{glassPrice?.toLocaleString()}</p>
                   )}
                 </div>

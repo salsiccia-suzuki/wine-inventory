@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
@@ -11,6 +11,7 @@ type Wine = {
   region: string
   vintage: number
   variety: string
+  country: string
   wine_type: string
   is_magnum: boolean
   stock: number
@@ -24,16 +25,53 @@ type Wine = {
 
 export default function WineDetail() {
   const router = useRouter()
-  const { id } = useParams()
+  const params = useParams()
+  const id = Array.isArray(params.id) ? params.id[0] : params.id as string
   const [wine, setWine] = useState<Wine | null>(null)
+  const [prevId, setPrevId] = useState<string | null>(null)
+  const [nextId, setNextId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [detailFields, setDetailFields] = useState({
+    variety: true, country: true, region: true, producer: true,
+    vintage: true, tasting_note: true, memo: true, price: true, so2: true,
+  })
+  const [settings, setSettings] = useState({ priceMultiplier: 2, priceAddition: 1000, glass1: 6, glass2: 8, swipeIncludeArchived: false })
+
+  const touchStartX = useRef<number | null>(null)
+  const touchStartY = useRef<number | null>(null)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('wineSettings')
+    if (saved) {
+      const s = JSON.parse(saved)
+      if (s.detailFields) setDetailFields(s.detailFields)
+      if (s.priceMultiplier) setSettings(prev => ({ ...prev, priceMultiplier: s.priceMultiplier }))
+      if (s.priceAddition !== undefined) setSettings(prev => ({ ...prev, priceAddition: s.priceAddition }))
+      if (s.glass1) setSettings(prev => ({ ...prev, glass1: s.glass1 }))
+      if (s.glass2) setSettings(prev => ({ ...prev, glass2: s.glass2 }))
+      if (s.swipeIncludeArchived !== undefined) setSettings(prev => ({ ...prev, swipeIncludeArchived: s.swipeIncludeArchived }))
+    }
+  }, [])
 
   useEffect(() => {
     async function fetchWine() {
-      const { data, error } = await supabase.from('wines').select('*').eq('id', id).single()
-      if (error) console.error(error)
-      else setWine(data)
+      setLoading(true)
+      const { data, error } = await supabase.from('wines').select('*').eq('id', Number(id)).single()
+      if (error) { console.error(error); setLoading(false); return }
+      setWine(data)
       setLoading(false)
+
+      // 前後のワインを名前順で取得
+      const savedSettings = JSON.parse(localStorage.getItem('wineSettings') || '{}')
+      const includeArchived = savedSettings.swipeIncludeArchived ?? false
+      let allQuery = supabase.from('wines').select('id, name').order('name')
+      if (!includeArchived) allQuery = allQuery.eq('is_archived', false)
+      const { data: allData, error: allError } = await allQuery
+      if (allData) {
+        const idx = allData.findIndex(w => String(w.id) === String(id))
+        setPrevId(idx > 0 ? allData[idx - 1].id : null)
+        setNextId(idx >= 0 && idx < allData.length - 1 ? allData[idx + 1].id : null)
+      }
     }
     fetchWine()
   }, [id])
@@ -41,22 +79,52 @@ export default function WineDetail() {
   async function updateStock(delta: number) {
     if (!wine) return
     const newStock = Math.max(0, wine.stock + delta)
-    const { error } = await supabase.from('wines').update({ stock: newStock }).eq('id', wine.id)
+    const { error } = await supabase.from('wines').update({ stock: newStock }).eq('id', Number(wine.id))
     if (!error) setWine({ ...wine, stock: newStock })
+  }
+
+  function navigateTo(direction: 'prev' | 'next') {
+    const target = direction === 'next' ? nextId : prevId
+    if (target) router.push(`/wines/${target}`)
+  }
+
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null || touchStartY.current === null) return
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    const dy = e.changedTouches[0].clientY - touchStartY.current
+    // 横方向の動きが縦より大きい場合のみスワイプ判定
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      if (dx < 0) navigateTo('next')
+      else navigateTo('prev')
+    }
+    touchStartX.current = null
+    touchStartY.current = null
   }
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-400">読み込み中…</div>
   if (!wine) return <div className="min-h-screen flex items-center justify-center text-gray-400">見つかりません</div>
 
-  const bottlePrice = wine.purchase_price ? wine.purchase_price * 2 + 1000 : null
-  const glassPrice6 = bottlePrice ? Math.round(bottlePrice / 6) : null
-  const glassPrice8 = bottlePrice ? Math.round(bottlePrice / 8) : null
+  const hasPrev = !!prevId
+  const hasNext = !!nextId
+
+  const bottlePrice = wine.purchase_price ? wine.purchase_price * settings.priceMultiplier + settings.priceAddition : null
+  const glassPrice1 = bottlePrice ? Math.round(bottlePrice / settings.glass1) : null
+  const glassPrice2 = bottlePrice ? Math.round(bottlePrice / settings.glass2) : null
 
   return (
     <div className="flex min-h-screen bg-gray-50">
 
-      {/* 左：写真（画面全体の高さ） */}
-      <div className="w-5/12 flex-shrink-0 bg-gray-200 sticky top-0 h-screen flex items-center justify-center overflow-hidden">
+      {/* 左：写真（画面全体の高さ）- ここでスワイプ */}
+      <div
+        className="w-5/12 flex-shrink-0 bg-gray-200 sticky top-0 h-screen flex items-center justify-center overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {wine.photo_url ? (
           <img src={wine.photo_url} alt={wine.name} className="w-full h-full object-cover" />
         ) : (
@@ -69,31 +137,49 @@ export default function WineDetail() {
       {/* 右：情報 */}
       <div className="flex-1 overflow-y-auto">
 
-        <div className="p-4 pb-0">
+        <div className="p-4 pb-0 flex items-center justify-between">
           <button onClick={() => router.push('/')} className="text-gray-400 text-2xl">←</button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigateTo('prev')}
+              disabled={!hasPrev}
+              className={`px-4 py-2 rounded-xl text-sm border ${hasPrev ? 'border-gray-300 text-gray-600 active:bg-gray-100' : 'border-gray-100 text-gray-200'}`}
+            >‹ 前へ</button>
+            <button
+              onClick={() => navigateTo('next')}
+              disabled={!hasNext}
+              className={`px-4 py-2 rounded-xl text-sm border ${hasNext ? 'border-gray-300 text-gray-600 active:bg-gray-100' : 'border-gray-100 text-gray-200'}`}
+            >次へ ›</button>
+          </div>
         </div>
 
         <div className="p-4 flex flex-col gap-4">
 
           <div>
             <p className="text-base font-medium text-gray-900 leading-tight">{wine.name}</p>
-            {wine.vintage && <p className="text-sm text-gray-400 mt-0.5">{wine.vintage}</p>}
+            {detailFields.vintage && wine.vintage && <p className="text-sm text-gray-400 mt-0.5">{wine.vintage}</p>}
           </div>
 
           <div className="flex flex-col gap-2">
-            {wine.variety && (
+            {detailFields.variety && wine.variety && (
               <div>
                 <p className="text-xs text-gray-400">品種</p>
                 <p className="text-sm font-medium text-gray-900">{wine.variety}</p>
               </div>
             )}
-            {wine.region && (
+            {detailFields.country && wine.country && (
+              <div>
+                <p className="text-xs text-gray-400">国</p>
+                <p className="text-sm font-medium text-gray-900">{wine.country}</p>
+              </div>
+            )}
+            {detailFields.region && wine.region && (
               <div>
                 <p className="text-xs text-gray-400">地方・産地</p>
                 <p className="text-sm font-medium text-gray-900">{wine.region}</p>
               </div>
             )}
-            {wine.producer && (
+            {detailFields.producer && wine.producer && (
               <div>
                 <p className="text-xs text-gray-400">生産者</p>
                 <p className="text-sm font-medium text-gray-900">{wine.producer}</p>
@@ -108,7 +194,7 @@ export default function WineDetail() {
             {wine.is_magnum && (
               <span className="text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">マグナム</span>
             )}
-            {wine.is_so2_free && (
+            {detailFields.so2 && wine.is_so2_free && (
               <span className="text-xs px-2.5 py-1 rounded-full bg-green-50 text-green-700">SO2無添加</span>
             )}
           </div>
@@ -126,7 +212,7 @@ export default function WineDetail() {
             </div>
           </div>
 
-          {bottlePrice && (
+          {detailFields.price && bottlePrice && (
             <div className="bg-white rounded-2xl border border-gray-100 p-4">
               <p className="text-xs text-gray-400 mb-3">売価</p>
               <div className="grid grid-cols-3 gap-3">
@@ -135,25 +221,25 @@ export default function WineDetail() {
                   <p className="text-sm font-medium text-gray-900 mt-1">¥{bottlePrice.toLocaleString()}</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-xs text-gray-400">グラス6杯</p>
-                  <p className="text-sm font-medium text-gray-900 mt-1">¥{glassPrice6?.toLocaleString()}</p>
+                  <p className="text-xs text-gray-400">グラス{settings.glass1}杯</p>
+                  <p className="text-sm font-medium text-gray-900 mt-1">¥{glassPrice1?.toLocaleString()}</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-xs text-gray-400">グラス8杯</p>
-                  <p className="text-sm font-medium text-gray-900 mt-1">¥{glassPrice8?.toLocaleString()}</p>
+                  <p className="text-xs text-gray-400">グラス{settings.glass2}杯</p>
+                  <p className="text-sm font-medium text-gray-900 mt-1">¥{glassPrice2?.toLocaleString()}</p>
                 </div>
               </div>
             </div>
           )}
 
-          {wine.tasting_note && (
+          {detailFields.tasting_note && wine.tasting_note && (
             <div className="bg-white rounded-2xl border border-gray-100 p-4">
               <p className="text-xs text-gray-400 mb-2">テイスティングコメント</p>
               <p className="text-sm text-gray-700 leading-relaxed">{wine.tasting_note}</p>
             </div>
           )}
 
-          {wine.memo && (
+          {detailFields.memo && wine.memo && (
             <div className={`rounded-2xl border p-4 ${wine.is_important_memo ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-100'}`}>
               <p className="text-xs text-gray-400 mb-2">
                 {wine.is_important_memo ? '⚠️ 重要メモ' : 'メモ'}

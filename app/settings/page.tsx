@@ -10,6 +10,7 @@ const DEFAULTS = {
   glass2: 8,
   stockAlertThreshold: 3,
   inventoryBase: 'purchase',
+  swipeIncludeArchived: false,
   listFields: {
     variety: true,
     country: true,
@@ -154,6 +155,20 @@ export default function Settings() {
               />
               <p className="text-sm text-gray-500">本以下で警告表示</p>
             </div>
+          </div>
+
+          {/* スワイプ検索 */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <p className="text-sm font-medium text-gray-900 mb-3">スワイプ検索</p>
+            <label className="flex items-center justify-between">
+              <span className="text-sm text-gray-700">アーカイブを含める</span>
+              <input
+                type="checkbox"
+                checked={settings.swipeIncludeArchived}
+                onChange={e => set('swipeIncludeArchived', e.target.checked)}
+                className="w-4 h-4"
+              />
+            </label>
           </div>
 
           {/* 棚卸金額の基準 */}
