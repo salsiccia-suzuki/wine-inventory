@@ -98,7 +98,7 @@ export default function WineDetail() {
     const dx = e.changedTouches[0].clientX - touchStartX.current
     const dy = e.changedTouches[0].clientY - touchStartY.current
     // 横方向の動きが縦より大きい場合のみスワイプ判定
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+    if (Math.abs(dx) > Math.abs(dy) * 1.5 && Math.abs(dx) > 60) {
       if (dx < 0) navigateTo('next')
       else navigateTo('prev')
     }
@@ -117,14 +117,14 @@ export default function WineDetail() {
   const glassPrice2 = bottlePrice ? Math.round(bottlePrice / settings.glass2) : null
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div
+      className="flex min-h-screen bg-gray-50"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
 
-      {/* 左：写真（画面全体の高さ）- ここでスワイプ */}
-      <div
-        className="w-5/12 flex-shrink-0 bg-gray-200 sticky top-0 h-screen flex items-center justify-center overflow-hidden"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
+      {/* 左：写真（画面全体の高さ） */}
+      <div className="w-5/12 flex-shrink-0 bg-gray-200 sticky top-0 h-screen flex items-center justify-center overflow-hidden">
         {wine.photo_url ? (
           <img src={wine.photo_url} alt={wine.name} className="w-full h-full object-cover" />
         ) : (
