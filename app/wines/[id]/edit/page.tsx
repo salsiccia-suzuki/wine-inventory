@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import AutocompleteInput from '@/app/components/AutocompleteInput'
 
 export default function EditWine() {
   const router = useRouter()
@@ -153,15 +154,13 @@ export default function EditWine() {
 
           <div>
             <label className="text-xs text-gray-400">生産者</label>
-            <input value={form.producer} onChange={e => set('producer', e.target.value)}
-              className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-gray-400" />
+            <AutocompleteInput field="producer" value={form.producer} onChange={v => set('producer', v)} />
           </div>
 
           <div className="flex gap-3">
             <div className="flex-1">
               <label className="text-xs text-gray-400">地方・産地</label>
-              <input value={form.region} onChange={e => set('region', e.target.value)}
-                className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-gray-400" />
+              <AutocompleteInput field="region" value={form.region} onChange={v => set('region', v)} />
             </div>
             <div className="w-24">
               <label className="text-xs text-gray-400">ヴィンテージ</label>
@@ -173,14 +172,12 @@ export default function EditWine() {
 
           <div>
             <label className="text-xs text-gray-400">品種</label>
-            <input value={form.variety} onChange={e => set('variety', e.target.value)}
-              className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-gray-400" />
+            <AutocompleteInput field="variety" value={form.variety} onChange={v => set('variety', v)} />
           </div>
 
           <div>
             <label className="text-xs text-gray-400">国</label>
-            <input value={form.country} onChange={e => set('country', e.target.value)}
-              className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-gray-400" />
+            <AutocompleteInput field="country" value={form.country} onChange={v => set('country', v)} />
           </div>
 
           <div>
