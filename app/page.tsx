@@ -103,6 +103,23 @@ export default function Home() {
 
   const totalValue = wines.reduce((sum, w) => sum + (w.purchase_price || 0) * w.stock, 0)
 
+  function exportCSV() {
+    const headers = ['名前', '生産者', '品種', '国', '地方・産地', 'ヴィンテージ', '種類', 'ボトルml', '在庫', '納価', 'テイスティングコメント', 'メモ', '重要メモ', 'SO2無添加', 'アーカイブ']
+    const rows = wines.map(w => [
+      w.name, w.producer, w.variety, w.country, w.region, w.vintage, w.wine_type,
+      w.is_magnum ? 1500 : 750, w.stock, w.purchase_price, w.tasting_note, w.memo,
+      w.is_important_memo ? '✓' : '', w.is_so2_free ? '✓' : '', w.is_archived ? '✓' : ''
+    ])
+    const csv = [headers, ...rows].map(r => r.map(v => `"${v ?? ''}"`).join(',')).join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `ワイン在庫_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-4xl mx-auto">
@@ -120,6 +137,7 @@ export default function Home() {
               className={`text-sm border rounded-full px-3 py-1 ${showAll ? 'bg-gray-900 text-white border-gray-900' : 'text-gray-400 border-gray-200'}`}
             >{showAll ? '全て表示中' : '全て表示'}</button>
             <button onClick={() => router.push('/archive')} className="text-gray-400 text-sm border border-gray-200 rounded-full px-3 py-1">アーカイブ</button>
+            <button onClick={exportCSV} className="text-gray-400 text-sm border border-gray-200 rounded-full px-3 py-1">CSV</button>
             <button onClick={() => router.push('/settings')} className="text-gray-400 text-2xl">⚙️</button>
           </div>
         </div>

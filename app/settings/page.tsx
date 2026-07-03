@@ -246,6 +246,17 @@ export default function Settings() {
           保存する
         </button>
 
+        <button onClick={() => {
+          if (confirm('設定をすべて初期値に戻しますか？')) {
+            localStorage.removeItem('wineSettings')
+            setSettings(DEFAULTS)
+            alert('設定をリセットしました')
+          }
+        }}
+          className="mt-3 w-full py-3 border border-gray-200 text-gray-400 rounded-xl text-sm font-medium">
+          設定をリセット
+        </button>
+
       </div>
     </div>
   )
