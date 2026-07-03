@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { GRAPE_VARIETIES, WINE_REGIONS, WINE_COUNTRIES } from '@/lib/wineData'
+import { GRAPE_VARIETIES, WINE_REGIONS, WINE_COUNTRIES, REGIONS_BY_COUNTRY } from '@/lib/wineData'
 
 const STATIC_DATA: Record<string, string[]> = {
   variety: GRAPE_VARIETIES,
@@ -15,9 +15,10 @@ type Props = {
   value: string
   onChange: (value: string) => void
   placeholder?: string
+  country?: string  // regionフィールド用：国で絞り込み
 }
 
-export default function AutocompleteInput({ field, value, onChange, placeholder }: Props) {
+export default function AutocompleteInput({ field, value, onChange, placeholder, country }: Props) {
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [dbValues, setDbValues] = useState<string[]>([])
   const [open, setOpen] = useState(false)
@@ -44,8 +45,11 @@ export default function AutocompleteInput({ field, value, onChange, placeholder 
       setOpen(false)
       return
     }
-    const staticList = STATIC_DATA[field] ?? []
-    // DB登録済みを優先、静的リストと合わせて重複除去
+    // regionフィールドかつ国が指定されていれば国別リストで絞り込み
+    let staticList = STATIC_DATA[field] ?? []
+    if (field === 'region' && country && REGIONS_BY_COUNTRY[country]) {
+      staticList = REGIONS_BY_COUNTRY[country]
+    }
     const combined = [...new Set([...dbValues, ...staticList])]
     const filtered = combined.filter(v =>
       v.toLowerCase().includes(value.toLowerCase()) && v !== value
