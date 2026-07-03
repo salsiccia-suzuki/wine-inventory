@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import AutocompleteInput from '@/app/components/AutocompleteInput'
+import StorageInput from '@/app/components/StorageInput'
 
 export default function NewWine() {
   const router = useRouter()
@@ -27,6 +28,8 @@ export default function NewWine() {
     is_important_memo: false,
     is_so2_free: false,
     purchase_price: '',
+    storage_location: '',
+    storage_memo: '',
   })
 
   function set(key: string, value: string | number | boolean) {
@@ -207,6 +210,18 @@ export default function NewWine() {
           </div>
 
           <hr className="border-gray-100" />
+
+          <div>
+            <label className="text-xs text-gray-400">保管場所</label>
+            <StorageInput value={form.storage_location} onChange={v => set('storage_location', v)} placeholder="例：店のセラー" />
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-400">保管位置メモ</label>
+            <input value={form.storage_memo} onChange={e => set('storage_memo', e.target.value)}
+              placeholder="例：一段目右から3番目"
+              className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-gray-400" />
+          </div>
 
           <div>
             <label className="text-xs text-gray-400">納価（円）</label>

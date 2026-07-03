@@ -11,6 +11,7 @@ const DEFAULTS = {
   stockAlertThreshold: 3,
   inventoryBase: 'purchase',
   swipeIncludeArchived: false,
+  storageLocations: [] as string[],
   listFields: {
     variety: true,
     country: true,
@@ -155,6 +156,51 @@ export default function Settings() {
               />
               <p className="text-sm text-gray-500">本以下で警告表示</p>
             </div>
+          </div>
+
+          {/* 保管場所マスター */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <p className="text-sm font-medium text-gray-900 mb-3">保管場所</p>
+            <div className="flex flex-col gap-2 mb-3">
+              {settings.storageLocations.map((loc, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <span className="text-sm text-gray-700">{loc}</span>
+                  <button
+                    onClick={() => setSettings(s => ({ ...s, storageLocations: s.storageLocations.filter((_, j) => j !== i) }))}
+                    className="text-xs text-red-400 px-2 py-1"
+                  >削除</button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="例：店のセラー、自宅セラー"
+                id="new-location-input"
+                className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-gray-400"
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    const val = (e.target as HTMLInputElement).value.trim()
+                    if (val && !settings.storageLocations.includes(val)) {
+                      setSettings(s => ({ ...s, storageLocations: [...s.storageLocations, val] }));
+                      (e.target as HTMLInputElement).value = ''
+                    }
+                  }
+                }}
+              />
+              <button
+                onClick={() => {
+                  const input = document.getElementById('new-location-input') as HTMLInputElement
+                  const val = input.value.trim()
+                  if (val && !settings.storageLocations.includes(val)) {
+                    setSettings(s => ({ ...s, storageLocations: [...s.storageLocations, val] }))
+                    input.value = ''
+                  }
+                }}
+                className="px-4 py-2 bg-gray-900 text-white rounded-xl text-sm"
+              >追加</button>
+            </div>
+            <p className="text-xs text-gray-400 mt-2">Enterまたは追加ボタンで登録</p>
           </div>
 
           {/* スワイプ検索 */}

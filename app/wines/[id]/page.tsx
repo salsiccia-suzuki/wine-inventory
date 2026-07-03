@@ -21,6 +21,8 @@ type Wine = {
   is_so2_free: boolean
   purchase_price: number
   photo_url: string
+  storage_location: string
+  storage_memo: string
 }
 
 export default function WineDetail() {
@@ -259,6 +261,14 @@ export default function WineDetail() {
                 {wine.is_important_memo ? '⚠️ 重要メモ' : 'メモ'}
               </p>
               <p className="text-sm text-gray-700 leading-relaxed">{wine.memo}</p>
+            </div>
+          )}
+
+          {(wine.storage_location || wine.storage_memo) && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-4">
+              <p className="text-xs text-gray-400 mb-2">保管場所</p>
+              {wine.storage_location && <p className="text-sm font-medium text-gray-900">{wine.storage_location}</p>}
+              {wine.storage_memo && <p className="text-sm text-gray-500 mt-0.5">{wine.storage_memo}</p>}
             </div>
           )}
 
