@@ -213,8 +213,8 @@ export default function WineDetail() {
             )}
           </div>
 
-          <div className="flex items-center justify-between py-3 border-t border-gray-100">
-            <p className="text-xs text-gray-400">在庫本数</p>
+          <div className="py-3 border-t border-gray-100">
+            <p className="text-xs text-gray-400 mb-2">在庫本数</p>
             <div className="flex items-center gap-2">
               <button onClick={() => updateStock(-1)}
                 className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-lg text-gray-600">−</button>
