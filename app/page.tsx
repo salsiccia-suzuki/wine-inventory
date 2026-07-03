@@ -88,6 +88,8 @@ export default function Home() {
               <div
                 key={wine.id}
                 className={`bg-white rounded-2xl border overflow-hidden flex h-24 ${wine.stock <= 2 ? 'border-red-200' : 'border-gray-100'}`}
+                onClick={() => router.push(`/wines/${wine.id}`)}
+                style={{ cursor: 'pointer' }}
               >
                 <div className="w-20 flex-shrink-0 bg-gray-100 flex items-center justify-center text-3xl">
                   {wine.photo_url ? (
