@@ -97,8 +97,16 @@ export default function WineDetail() {
     if (touchStartX.current === null || touchStartY.current === null) return
     const dx = e.changedTouches[0].clientX - touchStartX.current
     const dy = e.changedTouches[0].clientY - touchStartY.current
-    // 横方向の動きが縦より大きい場合のみスワイプ判定
-    if (Math.abs(dx) > Math.abs(dy) * 1.5 && Math.abs(dx) > 60) {
+    const totalMove = Math.sqrt(dx * dx + dy * dy)
+
+    if (totalMove < 15) {
+      // タップ：画面の左半分→前へ、右半分→次へ
+      const screenW = window.innerWidth
+      const tapX = e.changedTouches[0].clientX
+      if (tapX < screenW / 2) navigateTo('prev')
+      else navigateTo('next')
+    } else if (Math.abs(dx) > Math.abs(dy) * 1.5 && Math.abs(dx) > 60) {
+      // スワイプ
       if (dx < 0) navigateTo('next')
       else navigateTo('prev')
     }
@@ -120,7 +128,13 @@ export default function WineDetail() {
     <div
       className="flex min-h-screen bg-gray-50"
       onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
+      onTouchEnd={e => {
+        // ボタン類のタップは無視
+        const tag = (e.target as HTMLElement).tagName
+        const isButton = (e.target as HTMLElement).closest('button')
+        if (isButton) return
+        handleTouchEnd(e)
+      }}
     >
 
       {/* 左：写真（画面全体の高さ） */}
