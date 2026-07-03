@@ -38,7 +38,7 @@ export default function Settings() {
 
   useEffect(() => {
     const saved = localStorage.getItem('wineSettings')
-    if (saved) setSettings(JSON.parse(saved))
+    if (saved) setSettings({ ...DEFAULTS, ...JSON.parse(saved) })
   }, [])
 
   function set(key: string, value: string | number | boolean) {
